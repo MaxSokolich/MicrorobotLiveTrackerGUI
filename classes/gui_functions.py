@@ -84,7 +84,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         elif "Windows" in platform.platform():
             self.tbprint("Detected OS:  Windows")
-            PORT = "COM3"
+            PORT = "COM4"
         else:
             self.tbprint("undetected operating system")
             PORT = None
@@ -145,15 +145,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-
+    
     def update_actions(self, robot_list):
        
 
-
-        #insert algorithm below
-        Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run(robot_list)
-        
-        self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
+        if self.ui.apply_button.isChecked():
+            
+            #data from algorithm class
+            Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run(robot_list)
+            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
+        else:
+            Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = 0,0,0,0,0,0,0,0,0
+            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
 
 
 

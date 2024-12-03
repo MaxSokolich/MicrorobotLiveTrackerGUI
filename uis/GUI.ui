@@ -14,6 +14,7 @@
    <font>
     <family>Arial</family>
     <pointsize>12</pointsize>
+    <weight>50</weight>
     <italic>false</italic>
     <bold>false</bold>
    </font>
@@ -610,6 +611,7 @@ QPushButton {
       <property name="font">
        <font>
         <pointsize>12</pointsize>
+        <weight>50</weight>
         <italic>false</italic>
         <bold>false</bold>
        </font>
@@ -734,6 +736,7 @@ QPushButton {
       <property name="font">
        <font>
         <pointsize>12</pointsize>
+        <weight>50</weight>
         <italic>false</italic>
         <bold>false</bold>
        </font>
@@ -773,8 +776,8 @@ QPushButton {
      <widget class="QPushButton" name="maskbutton">
       <property name="geometry">
        <rect>
-        <x>20</x>
-        <y>10</y>
+        <x>10</x>
+        <y>50</y>
         <width>101</width>
         <height>31</height>
        </rect>
@@ -811,7 +814,7 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>140</x>
-        <y>10</y>
+        <y>50</y>
         <width>131</width>
         <height>30</height>
        </rect>
@@ -835,6 +838,7 @@ QPushButton {
       <property name="font">
        <font>
         <pointsize>12</pointsize>
+        <weight>50</weight>
         <italic>false</italic>
         <bold>false</bold>
        </font>
@@ -872,6 +876,58 @@ QPushButton {
       </property>
       <property name="text">
        <string>Upper Thresh</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="apply_button">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>281</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="cursor">
+       <cursorShape>ArrowCursor</cursorShape>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+                color: rgb(255, 255, 255);
+                background-color: rgb(0, 0, 255);
+                border-style: outset;
+                border-width: 3px;
+                border-radius: 10px;
+                border-color: rgb(0, 0, 255);
+                min-width: 1em;
+                padding: 2px;
+			  font: bold 15px;
+            }
+      
+            QPushButton:checked {
+                color: rgb(255, 255, 255);
+                background-color: rgb(255, 0, 0);
+                border-style: inset;
+                border-width: 3px;
+                border-radius: 10px;
+                border-color: rgb(255, 0, 0);
+                font: bold 25px;
+                min-width: 1em;
+               
+            }
+            QPushButton:hover {
+                background-color: rgb(100, 100, 100);
+                color: rgb(255, 255, 255);
+                border-color: rgb(0, 255, 0);
+                padding-left: 5px;
+                padding-top: 5px;
+            }</string>
+      </property>
+      <property name="text">
+       <string>Apply Algorithm</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>
@@ -1153,6 +1209,7 @@ color: rgb(0,255,0);</string>
       <font>
        <family>Arial</family>
        <pointsize>12</pointsize>
+       <weight>50</weight>
        <italic>false</italic>
        <bold>false</bold>
       </font>
@@ -1203,6 +1260,7 @@ color: rgb(0,255,0);</string>
       <font>
        <family>Arial</family>
        <pointsize>12</pointsize>
+       <weight>50</weight>
        <italic>false</italic>
        <bold>false</bold>
       </font>
@@ -1243,7 +1301,7 @@ color: rgb(0,255,0);</string>
      </property>
      <property name="minimumSize">
       <size>
-       <width>21</width>
+       <width>25</width>
        <height>0</height>
       </size>
      </property>
