@@ -1,8 +1,7 @@
-This is a repo containing just tracking information from a FLIR Blackfly camera
+This is a repo containing just tracking information from a FLIR blackfly camera and can be used as a template for microrobotic control algorithms.
 
 
-
-
+Possibly:
 4)  need to install qt5
     - sudo apt install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools  
     - sudo apt install qt5-default
