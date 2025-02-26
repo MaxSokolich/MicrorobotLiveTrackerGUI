@@ -20,7 +20,7 @@ class algorithm:
        
 
         
-        #middle: define a trajectory
+        #middle: algorithm
         trajectory_nodes = [[400, 400], [1800,400], [400, 1800], [1800, 1800]]
         
         
@@ -31,6 +31,10 @@ class algorithm:
         up = By = 1
         down = By = -1
         """
+        
+        
+        
+        
         #output: actions which is the magetnic field commands applied to the arduino
 
         Bx = 1 #-1 -> 1
