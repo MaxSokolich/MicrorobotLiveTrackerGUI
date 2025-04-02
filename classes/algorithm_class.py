@@ -16,24 +16,12 @@ class algorithm:
             robot = robot_list[bot_num]
             pos = robot.position_list[-1]
             print("robot {} pos = {}".format(bot_num, pos))
+            
+        
+        robot_list[-1].trajectory = [[400, 400], [1800,400], [400, 1800], [1800, 1800]]  #most recent robot trajectory
         
        
 
-        
-        #middle: algorithm
-        trajectory_nodes = [[400, 400], [1800,400], [400, 1800], [1800, 1800]]
-        
-        
-        """
-        right = Bx = 1
-        left = Bx = -1
-
-        up = By = 1
-        down = By = -1
-        """
-        
-        
-        
         
         #output: actions which is the magetnic field commands applied to the arduino
 

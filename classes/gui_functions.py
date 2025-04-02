@@ -62,7 +62,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.textheightratio = .129
         self.tabheightratio = 0.925
         self.tabheightratio = 0.925
-        
+        self.magnetic_field_list = []
         self.aspectratio = 1041/801
         self.resize_widgets()
 
@@ -100,6 +100,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentframe = None
         self.frame_number = 0
         self.robots = []
+        self.cells = []
         self.videopath = 0
         self.cap = None
         self.tracker = None
@@ -146,7 +147,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     
-    def update_actions(self, robot_list):
+    def update_actions(self, frame, robot_list):
        
 
         if self.ui.apply_button.isChecked():
@@ -180,20 +181,64 @@ class MainWindow(QtWidgets.QMainWindow):
                                      bot.stuck_status_list[-1],
                                      bot.trajectory,
                                     ]
+                self.actions = [bot.frame_list[-1], Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq] 
                 
                 self.robots.append(currentbot_params)
         
+        
+       
+        self.magnetic_field_list.append(self.actions)
+
+
         #IF SAVE STATUS THEN CONTINOUSLY SAVE THE CURRENT ROBOT PARAMS AND MAGNETIC FIELD PARAMS TO AN EXCEL ROWS
         if self.save_status == True:
+            self.magnetic_field_sheet.append(self.actions)
             for (sheet, bot) in zip(self.robot_params_sheets,self.robots):
                 sheet.append(bot[:-1])
+
+        
+
+
+        """Updates the image_label with a new opencv image"""
+ 
+        frame = self.handle_zoom(frame)
+    
+        self.currentframe = frame
+        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
       
+        bytes_per_line = ch * w
+        convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+        p = convert_to_Qt_format.scaled(self.display_width, self.display_height, Qt.KeepAspectRatio)
+        qt_img = QPixmap.fromImage(p)
+       
+        #update frame slider too
+        self.ui.framelabel.setText("Frame:"+str(self.frame_number))
+        if self.videopath !=0:
+            self.ui.frameslider.setValue(self.tracker.framenum)
+        
+        #also update robot info
+        if len(self.robots) > 0:
+            robot_diameter = round(np.sqrt(4*self.robots[-1][8]/np.pi),1)
+            self.ui.vellcdnum.display(int(self.robots[-1][6]))
+            self.ui.blurlcdnum.display(int(self.robots[-1][7]))
+            self.ui.sizelcdnum.display(robot_diameter)
+                
+       
+        self.ui.VideoFeedLabel.setPixmap(qt_img)
+      
+
+
 
 
 
     def start_data_record(self):
         self.output_workbook = openpyxl.Workbook()
-            
+        
+        #create sheet for magneti field actions
+        self.magnetic_field_sheet = self.output_workbook.create_sheet(title="Magnetic Field Actions")#self.output_workbook.active
+        self.magnetic_field_sheet.append(["Frame","Bx", "By", "Bz", "Alpha", "Gamma", "Rolling Frequency", "Psi", "Gradient?","Equal Field?", "Acoustic Frequency","Sensor Bx", "Sensor By", "Sensor Bz"])
+
 
         #create sheet for robot data
         self.robot_params_sheets = []
@@ -205,6 +250,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #tell update_actions function to start appending data to the sheets
         self.save_status = True
+
+
 
 
 
@@ -223,7 +270,6 @@ class MainWindow(QtWidgets.QMainWindow):
                             self.robot_params_sheets[i].cell(row=idx+2, column=17).value = y
                 except Exception:
                     pass
-       
             #save and close workbook
             self.output_workbook.remove(self.output_workbook["Sheet"])
             self.output_workbook.save(file_path)
@@ -232,6 +278,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.output_workbook = None
 
     
+
+
+
+
     def savedata(self):
         if self.ui.savedatabutton.isChecked():
             self.ui.savedatabutton.setText("Stop")
@@ -323,36 +373,6 @@ class MainWindow(QtWidgets.QMainWindow):
             
             
 
-    def update_image(self, frame):
-        """Updates the image_label with a new opencv image"""
- 
-        frame = self.handle_zoom(frame)
-    
-        self.currentframe = frame
-        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        h, w, ch = rgb_image.shape
-      
-        bytes_per_line = ch * w
-        convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-        p = convert_to_Qt_format.scaled(self.display_width, self.display_height, Qt.KeepAspectRatio)
-        qt_img = QPixmap.fromImage(p)
-       
-        #update frame slider too
-        self.ui.framelabel.setText("Frame:"+str(self.frame_number))
-        if self.videopath !=0:
-            self.ui.frameslider.setValue(self.tracker.framenum)
-        
-        #also update robot info
-        if len(self.robots) > 0:
-            robot_diameter = round(np.sqrt(4*self.robots[-1][8]/np.pi),1)
-            self.ui.vellcdnum.display(int(self.robots[-1][6]))
-            self.ui.blurlcdnum.display(int(self.robots[-1][7]))
-            self.ui.sizelcdnum.display(robot_diameter)
-                
-       
-        self.ui.VideoFeedLabel.setPixmap(qt_img)
-        
-        
 
     
 
@@ -498,9 +518,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.setFile()
                 
                 self.tracker = VideoThread(self)
-                self.tracker.change_pixmap_signal.connect(self.update_image)
+                self.tracker.change_pixmap_robot_list_signal.connect(self.update_actions)
                 self.tracker.cropped_frame_signal.connect(self.update_croppedimage)
-                self.tracker.robot_list_signal.connect(self.update_actions)
                 self.tracker.start()
 
                 self.ui.trackbutton.setText("Stop")
