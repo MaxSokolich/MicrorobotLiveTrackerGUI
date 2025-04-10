@@ -26,7 +26,7 @@ class algorithm:
         #output: actions which is the magetnic field commands applied to the arduino
 
         #most important action commands
-        alpha = np.radians(30) #0 -> 360 deg. must be in radians
+        alpha = np.radians(30) - np.pi/2 #0 -> 360 deg. must be in radians. subtract 90 deg for rolling
         gamma = np.radians(90) #0 -> 180 deg. must be in radians
         freq = 0 #0 -> 180 Hz
 

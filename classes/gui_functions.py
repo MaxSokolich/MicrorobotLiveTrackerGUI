@@ -107,6 +107,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.joystick = pygame.joystick.Joystick(0)
             self.joystick.init()
             self.tbprint("Connected to: "+str(self.joystick.get_name()))
+            
         self.joystick_status = False
 
 
@@ -195,18 +196,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 gamma = np.radians(0)
             else:
                 gamma = np.radians(90)
+            psi = np.pi/2
+            alpha = alpha - np.pi/2  #for rolling subtract 90 deg
+            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, 0, 0,  acoustic_freq)
               
 
 
 
         # APPLY ACTIONS FROM ALGORITHM 
         elif self.algorithm_status == True:
-            #data from algorithm class
-            frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq = self.algorithm.run(robot_list, frame)
-            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field,  acoustic_freq)
+            if len(robot_list) > 0:
+                #data from algorithm class
+                frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq = self.algorithm.run(robot_list, frame)
+                self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field,  acoustic_freq)
         else:
             Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq = 0,0,0,0,0,0,0,0,0,0
+            
             self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq)
+           
 
 
 

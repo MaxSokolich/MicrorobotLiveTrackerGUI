@@ -272,7 +272,7 @@ class Windows_Controller:
                         self.psi,
                         self.acoustic_frequency]
         
-
+    
         return self.actions
 
         
