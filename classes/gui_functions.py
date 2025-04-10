@@ -34,7 +34,7 @@ from classes.arduino_class import ArduinoHandler
 from classes.robot_class import Robot
 from classes.record_class import RecordThread
 from classes.algorithm_class import algorithm
-
+from classes.joystick_class import Mac_Controller,Linux_Controller,Windows_Controller
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -76,22 +76,38 @@ class MainWindow(QtWidgets.QMainWindow):
         #connect to arduino
         if "mac" in platform.platform():
             self.tbprint("Detected OS: macos")
-            PORT = "/dev/cu.usbmodem11301"
-           
+            PORT = "/dev/cu.usbmodem11401"
+            self.controller_actions = Mac_Controller()
         elif "Linux" in platform.platform():
             self.tbprint("Detected OS: Linux")
             PORT = "/dev/ttyACM0"
-
+            self.controller_actions = Linux_Controller()
         elif "Windows" in platform.platform():
             self.tbprint("Detected OS:  Windows")
-            PORT = "COM4"
+            PORT = "COM3" #use 3 for one of them
+            self.controller_actions = Windows_Controller()
         else:
             self.tbprint("undetected operating system")
             PORT = None
         
+        #define instance of arduino class
         self.arduino = ArduinoHandler(self.tbprint)
         self.arduino.connect(PORT)
+
+        #define instance of algorithm class
         self.algorithm = algorithm()
+        self.algorithm_status = False
+
+        #define joystick
+        pygame.init()
+        if pygame.joystick.get_count() == 0:
+            self.tbprint("No Joystick Connected...")
+            
+        else:
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+            self.tbprint("Connected to: "+str(self.joystick.get_name()))
+        self.joystick_status = False
 
 
 
@@ -142,31 +158,60 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.exposurebox.valueChanged.connect(self.get_exposure)
         self.ui.croppedmasktoggle.clicked.connect(self.showcroppedoriginal)
         self.ui.croppedrecordbutton.clicked.connect(self.croppedrecordfunction)
+
+        self.ui.apply_button.clicked.connect(self.algorithm_function)
+        self.ui.joystick_button.clicked.connect(self.joystick_function)
   
+
+    def algorithm_function(self):
+        if self.ui.apply_button.isChecked():
+            self.ui.apply_button.setText("Stop")
+            self.algorithm_status = True
+        else:
+            self.ui.apply_button.setText("Apply Algorithm")
+            self.algorithm_status = False
+    
+    def joystick_function(self):
+        if self.ui.joystick_button.isChecked():
+            self.ui.joystick_button.setText("Stop")
+            self.joystick_status = True
+        else:
+            self.ui.joystick_button.setText("Joystick")
+            self.joystick_status = False
+
+
 
 
 
     
     def update_actions(self, frame, robot_list):
-       
+        
+        # APPLY ACTIONS FROM JOYSTICK 
+        if self.joystick_status == True:
+            type, Bx, By, Bz, alpha, gamma, freq, psi, acoustic_freq = self.controller_actions.run(self.joystick)
+            if type == 1:
+                gamma = np.radians(180)
+            elif type == 2:
+                gamma = np.radians(0)
+            else:
+                gamma = np.radians(90)
+              
 
-        if self.ui.apply_button.isChecked():
-            
+
+
+        # APPLY ACTIONS FROM ALGORITHM 
+        elif self.algorithm_status == True:
             #data from algorithm class
-            Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run(robot_list)
-            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
+            frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq = self.algorithm.run(robot_list, frame)
+            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field,  acoustic_freq)
         else:
-            Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = 0,0,0,0,0,0,0,0,0
-            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
+            Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq = 0,0,0,0,0,0,0,0,0,0
+            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq)
 
 
 
 
-
-
-
-
-        #DEFINE CURRENT ROBOT PARAMS TO A LIST
+        # DEFINE CURRENT ROBOT PARAMS TO A LIST
         if len(robot_list) > 0:
             self.robots = []
             for bot in robot_list:
@@ -178,19 +223,16 @@ class MainWindow(QtWidgets.QMainWindow):
                                      bot.area_list[-1],
                                      bot.avg_area,
                                      bot.cropped_frame[-1][0],bot.cropped_frame[-1][1],bot.cropped_frame[-1][2],bot.cropped_frame[-1][3],
-                                     bot.stuck_status_list[-1],
+                                     bot.um2pixel,
                                      bot.trajectory,
                                     ]
-                self.actions = [bot.frame_list[-1], Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq] 
-                
+                self.actions = [bot.frame_list[-1], Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq] 
                 self.robots.append(currentbot_params)
-        
-        
-       
+               
         self.magnetic_field_list.append(self.actions)
 
 
-        #IF SAVE STATUS THEN CONTINOUSLY SAVE THE CURRENT ROBOT PARAMS AND MAGNETIC FIELD PARAMS TO AN EXCEL ROWS
+        # IF SAVE STATUS THEN CONTINOUSLY SAVE THE CURRENT ROBOT PARAMS AND ACTIONS PARAMS TO AN EXCEL SHEET
         if self.save_status == True:
             self.magnetic_field_sheet.append(self.actions)
             for (sheet, bot) in zip(self.robot_params_sheets,self.robots):
@@ -198,9 +240,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         
 
-
+        # UPDATE THE GUI WINDOW WITH THE INCOMING CAMERA FRAME
         """Updates the image_label with a new opencv image"""
- 
         frame = self.handle_zoom(frame)
     
         self.currentframe = frame
@@ -212,12 +253,12 @@ class MainWindow(QtWidgets.QMainWindow):
         p = convert_to_Qt_format.scaled(self.display_width, self.display_height, Qt.KeepAspectRatio)
         qt_img = QPixmap.fromImage(p)
        
-        #update frame slider too
+        #update frame slider too# although unneccesary
         self.ui.framelabel.setText("Frame:"+str(self.frame_number))
         if self.videopath !=0:
             self.ui.frameslider.setValue(self.tracker.framenum)
         
-        #also update robot info
+        #also update robot info to window
         if len(self.robots) > 0:
             robot_diameter = round(np.sqrt(4*self.robots[-1][8]/np.pi),1)
             self.ui.vellcdnum.display(int(self.robots[-1][6]))
@@ -226,6 +267,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 
        
         self.ui.VideoFeedLabel.setPixmap(qt_img)
+        self.frame_number +=1
       
 
 
@@ -245,6 +287,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(len(self.robots)):
             robot_sheet = self.output_workbook.create_sheet(title= "Robot {}".format(i+1))
             robot_sheet.append(["Frame","Times","Pos X", "Pos Y", "Vel X", "Vel Y", "Vel Mag", "Blur", "Area", "Avg Area", "Cropped X","Cropped Y","Cropped W","Cropped H","Stuck?","Path X", "Path Y"])
+            robot_sheet.append(["Frame","Time(s)","Pos X (px)", "Pos Y (px)", "Vel X (um/s)", "Vel Y (um/s)", "Vel Mag (um/s)", "Blur", "Area (um^2)", "Avg Area (um^2)", "Cropped X (px)","Cropped Y (px)","Cropped W (px)","Cropped H (px)","um2pixel","Path X (px)", "Path Y (px)"])
             self.robot_params_sheets.append(robot_sheet)
         
 
@@ -302,6 +345,8 @@ class MainWindow(QtWidgets.QMainWindow):
         newy = int(pos.y() * (self.video_height / self.display_height))
         return newx, newy
 
+
+
     def eventFilter(self, object, event):
         if object is self.ui.VideoFeedLabel: 
             if self.tracker is not None:
@@ -324,12 +369,10 @@ class MainWindow(QtWidgets.QMainWindow):
                         robot.add_crop([x_1, y_1, w, h])
                         robot.add_area(0)
                         robot.add_blur(0)
-                        robot.add_stuck_status(0)
+
                         robot.crop_length = self.ui.robotcroplengthbox.value()
                         self.tracker.robot_list.append(robot) #this has to include tracker.robot_list because I need to add it to that class
                         
-        
-               
                     
                     
                     if event.buttons() == QtCore.Qt.RightButton: 
@@ -441,14 +484,21 @@ class MainWindow(QtWidgets.QMainWindow):
     def setFile(self):
         if self.videopath == 0:
             try:
-                self.cap  = cv2.VideoCapture(0)
-                #self.cap  = EasyPySpin.VideoCapture(0)
-                #self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
-                #self.cap.set(cv2.CAP_PROP_FPS, 30)
-                #self.cap.set(cv2.CAP_PROP_FPS, 30)
+                #self.cap  = cv2.VideoCapture(0)
+                self.cap  = EasyPySpin.VideoCapture(0)
+              
+                if self.cap.isOpened():                  
+                    self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
+                    self.cap.set(cv2.CAP_PROP_FPS, 24)
+                    self.tbprint("Connected to FLIR Camera")
+                else:
+                    self.cap  = cv2.VideoCapture(0) 
+                    self.tbprint("No EasyPySpin Camera Available")
+
             except Exception:
                 self.cap  = cv2.VideoCapture(0) 
                 self.tbprint("No EasyPySpin Camera Available")
+
             self.ui.pausebutton.hide()
             self.ui.leftbutton.hide()
             self.ui.rightbutton.hide()
@@ -717,19 +767,14 @@ class MainWindow(QtWidgets.QMainWindow):
             elif y-h < 0:
                 frame[0:y+h , x-w:x+w] =  zoomedframe
             else:
-                frame[y-h:y+h , x-w:x+w] =  zoomedframe
-
-
-        
+                frame[y-h:y+h , x-w:x+w] =  zoomedframe    
         return frame
-
+    
     def closeEvent(self, event):
         """
         called when x button is pressed
         """
-        
         if self.tracker is not None:
             self.tracker.stop()
         #self.recorder.stop()
-
         self.arduino.close()

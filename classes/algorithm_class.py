@@ -1,10 +1,12 @@
 
+import numpy as np
+
 
 class algorithm:
     def __init__(self):
         pass
 
-    def run(self, robot_list):
+    def run(self, robot_list, frame):
         """
         input: data about robot. eg, velocity or position
         output: magnetic field action commands
@@ -18,22 +20,24 @@ class algorithm:
             print("robot {} pos = {}".format(bot_num, pos))
             
         
-        robot_list[-1].trajectory = [[400, 400], [1800,400], [400, 1800], [1800, 1800]]  #most recent robot trajectory
+        trajectory = robot_list[-1].trajectory  #can set as a different trajectory or use the drawn trajectory
         
        
-
-        
         #output: actions which is the magetnic field commands applied to the arduino
 
-        Bx = 1 #-1 -> 1
-        By = 0 #-1 -> 1
-        Bz = 0 #-1 -> 1
-        alpha = 30 #0 -> 360 deg
-        gamma = 90 #0 -> 180 deg
+        #most important action commands
+        alpha = np.radians(30) #0 -> 360 deg. must be in radians
+        gamma = np.radians(90) #0 -> 180 deg. must be in radians
         freq = 0 #0 -> 180 Hz
-        psi = 0 #0 -> 90 deg
-        gradient = 1 # gradient has to be 1 for the gradient thing to work
-        acoustic_freq = 0
+
+        # other variables not really used
+        Bx = 0 # -1 -> 1
+        By = 0 # -1 -> 1
+        Bz = 0 # -1 -> 1
+        psi = np.radians(90) #0 -> 90 deg. must be in radians
+        gradient = 0 # gradient has to be 1 for the gradient to work
+        equal_field = 0 # not used
+        acoustic_freq = 0  # not used
         
         
-        return Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq
+        return frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, equal_field, acoustic_freq
